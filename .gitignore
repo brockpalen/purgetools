@@ -1,0 +1,10 @@
+
+# ignore directories for mpifileutils
+install/*
+deps/*
+mpifileutils/*
+build/*
+
+*.cache
+*.log
+*.txt
