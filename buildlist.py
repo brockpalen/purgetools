@@ -90,7 +90,7 @@ def scan_path(path,
     
     print(args)
     if (dryrun):
-       print("--dry-run given not scanning, exiting")
+       print("--dryrun given not scanning, exiting")
        return
 
     subprocess.run(args, check=True)
