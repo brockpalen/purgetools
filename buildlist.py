@@ -83,11 +83,9 @@ def scan_path(path,
     args.append(str(pathlib.Path(__file__).resolve().parent.joinpath("install/bin/dwalk")))
     args += ["--progress", f"{progress}"]
     args += ["--type", "f"]
-    args += ["--sort", "user,name"]
     args += ["--atime", f"+{atime}"]
     args += ["--distribution", f"{distribution}"]
     args += ["--output", f"{scanident}-{path.name}.cache"]
-    args += ["--text-output", f"{scanident}-{path.name}.txt"]
     args.append(f"{path}")
     
     print(args)
@@ -96,6 +94,37 @@ def scan_path(path,
        return
 
     subprocess.run(args, check=True)
+
+    # dwalk will error if there are no files to sort, but sorting speeds building per user lists 
+    # dwalk will also not write an output file if there are no entires so test if it exists if so sort it
+    # this isn't as slow as expected as the sort is very fast,
+    if pathlib.Path(f"{scanident}-{path.name}.cache").is_file():
+        # cache file exists so sort and create sorted text version
+        # no extra filters required 
+
+        print("Purge Candidates found sorting")
+
+        args = [config['DEFAULT']['mpirunpath']]
+        args.append('--allow-run-as-root')
+        args.append('--oversubscribe')
+        args += ["--mca", "io", f"{config['DEFAULT']['romio']}"]
+        args += ["-np", f"{np}"]
+    
+        # add settings for dwalk, mpiFileUtils installed in <instdir>/install/bin/dwalk
+        args.append(str(pathlib.Path(__file__).resolve().parent.joinpath("install/bin/dwalk")))
+        args += ["--progress", f"{progress}"]
+        args += ["--type", "f"]
+        args += ["--atime", f"+{atime}"]
+        args += ["--distribution", f"{distribution}"]
+        args += ["--sort", "user,name"]
+        args += ["--input", f"{scanident}-{path.name}.cache"]
+        args += ["--text-output", f"{scanident}-{path.name}.txt"]
+
+        subprocess.run(args, check=True)
+
+    else:
+        print(f"No Purge candidates for {path.name}")
+
 
 
 #########  MAIN PROGRM ########
