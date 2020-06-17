@@ -136,4 +136,7 @@ pp.pprint(scan_set)
 for path in scan_set:
       scan_path(path,
                 scanident = args.scanident,
+                np = args.np,
+                atime = args.days,
+                progress = args.progress,
                 dryrun=args.dryrun)
