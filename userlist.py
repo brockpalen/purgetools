@@ -45,11 +45,17 @@ pp.pprint(paths)
 
 currentuser = ''
 
+pathdict ={}
+
 for path in paths:
    with path.open() as f:
       lines = f.readlines()
       for line in lines:
           lineuser = get_user(line)
-          user_log = pathlib.Path.cwd() / f"{args.scanident}-{lineuser}.purge.txt"
-          with user_log.open("a") as g:
+          if lineuser in pathdict:
+              pathdict[lineuser].write(line)
+          else:
+               user_log = pathlib.Path.cwd() / f"{args.scanident}-{lineuser}.purge.txt"
+               g = user_log.open("a")
+               pathdict[lineuser] = g
                g.write(line)
