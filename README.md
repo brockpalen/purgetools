@@ -34,7 +34,6 @@ You may wish to wrap this in spack (please do)
 
 ## TODO
 
- * Allow scanning just top level in one pass eg '/scratch/'  rather than each directory underneath (breaks path ignores)
  * User notification
   * Move sorted data to user visiable location and change ownership to the user and access to the file (metadata may be sensitive)
   * Email user form letter with location of their purge list

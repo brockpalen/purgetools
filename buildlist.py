@@ -17,6 +17,7 @@ parser.add_argument('--days', help='Number of days (Default 60)', type=int, defa
 parser.add_argument('--np', help='Number of processors (Default 20)', type=int, default=20, metavar='N')
 parser.add_argument('--progress', help='How often to print scan progress (Default 60)', type=int, metavar='S', default=60)
 parser.add_argument('--dryrun', help='Print list to scan and quit', action="store_true")
+parser.add_argument('--dontwalk', help='Don\'t split <Path> into each directory', action="store_true")
 parser.add_argument('--scanident', help='Unique identifier for scan to append to logs/files Default D-m-Y)', type=str, default=datetime.now().strftime("%d-%m-%Y"))
 
 args = parser.parse_args()
@@ -40,7 +41,7 @@ def check_path_exclude(path, excludelist=[], ignoremissing=False):
        
 # builds a set of paths to scan
 # path is string of directory to walk for top level directories
-def build_scanlist(path):
+def build_scanlist(path, dontwalk=False):
     path = pathlib.Path(path)
     if path.is_dir():
         print(f"Path {path.resolve()} exists")
@@ -51,9 +52,13 @@ def build_scanlist(path):
 
     # can only scan directories
     sc_paths = set()
-    for x in path.iterdir():
-        if x.is_dir():
-           sc_paths.add(x)
+
+    if dontwalk:
+        sc_paths.add(path)
+    else:
+        for x in path.iterdir():
+            if x.is_dir():
+               sc_paths.add(x)
 
     return sc_paths - ex_paths
 
@@ -128,7 +133,7 @@ def scan_path(path,
 
 
 #########  MAIN PROGRM ########
-scan_set = build_scanlist(args.path)
+scan_set = build_scanlist(args.path, dontwalk=args.dontwalk)
 
 print("Will Scan Following List")
 pp.pprint(scan_set)
