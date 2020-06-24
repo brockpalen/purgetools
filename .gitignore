@@ -4,6 +4,7 @@ install/*
 deps/*
 mpifileutils/*
 build/*
+__pycache__
 
 *.cache
 *.log

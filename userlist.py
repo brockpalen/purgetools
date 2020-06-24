@@ -5,25 +5,25 @@
 import argparse, pathlib, subprocess, configparser
 import pprint, time
 from collections import OrderedDict
+import sys
 
 # load config file settings
 config = configparser.ConfigParser()
 config.read(pathlib.Path(__file__).resolve().parent.joinpath('etc/buildlist.ini'))
 
-#grab cli options
-parser = argparse.ArgumentParser(description='Collect each user purge candidates into a single list')
-parser.add_argument('--dryrun', help='Print list to scan and quit', action="store_true")
-parser.add_argument('--scanident', help='Unique identifier for scan from buildlist.py ', type=str, required=True)
-parser.add_argument('--cachelimit', help='Number of file hanels to hold open', type=int, default=100)
-
-args = parser.parse_args()
-
-pp = pprint.PrettyPrinter(indent=4)
+def parse_args(args):
+    #grab cli options
+    parser = argparse.ArgumentParser(description='Collect each user purge candidates into a single list')
+    parser.add_argument('--dryrun', help='Print list to scan and quit', action="store_true")
+    parser.add_argument('--scanident', help='Unique identifier for scan from buildlist.py ', type=str, required=True)
+    parser.add_argument('--cachelimit', help='Number of file hanels to hold open', type=int, default=100)
+    args = parser.parse_args(args)
+    return args
 
 
 # get list of all files matching 'scanident'
 def get_dir_paths(path=pathlib.Path.cwd(),
-                 scanident=args.scanident):
+                 scanident=None):
      
 
      return list(path.glob(f'{scanident}*.txt'))
@@ -78,23 +78,26 @@ class UserSort:
           handle.write(line)
 
 
-      
-
-paths = get_dir_paths(scanident=args.scanident)
-
-pp.pprint(paths)
-
-if args.dryrun:
-   print("--dryrun given exiting")
-   exit(0)
-
-currentuser = ''
-
-sorter = UserSort(cachelimit=args.cachelimit)
-for path in paths:
-   with path.open() as f:
-      lines = f.readlines()
-      for line in lines:
-          lineuser = get_user(line)
-          sorter.writeline(lineuser, line)
-
+if __name__ == "__main__":
+    pp = pprint.PrettyPrinter(indent=4)
+    args = parse_args(sys.argv[1:])
+          
+    
+    paths = get_dir_paths(scanident=args.scanident)
+    
+    pp.pprint(paths)
+    
+    if args.dryrun:
+       print("--dryrun given exiting")
+       exit(0)
+    
+    currentuser = ''
+    
+    sorter = UserSort(cachelimit=args.cachelimit)
+    for path in paths:
+       with path.open() as f:
+          lines = f.readlines()
+          for line in lines:
+              lineuser = get_user(line)
+              sorter.writeline(lineuser, line)
+    
