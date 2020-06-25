@@ -46,9 +46,10 @@ def get_user(line):
 class UserSort:
    # cachelimit is number of open files to hold open
    # if you get to many open files lower this value default=100
-   def __init__(self, cachelimit=100):
+   def __init__(self, scanident, cachelimit=100):
       self._handles = OrderedDict()
       self._cachelimit = cachelimit
+      self._scanident  = scanident
 
    # returns handle if exists in _handles or creates a new one push end of list
    # if _handles.count() = cachelimit  pop front of list
@@ -64,7 +65,7 @@ class UserSort:
               self._handles.popitem(last=False)
 
            # go ahead and create handle
-           user_log = pathlib.Path.cwd() / f"{args.scanident}-{lineuser}.purge.txt"
+           user_log = pathlib.Path.cwd() / f"{self._scanident}-{lineuser}.purge.txt"
            g = user_log.open("a")
            self._handles[lineuser] = g
            return self._handles[lineuser]
@@ -76,6 +77,14 @@ class UserSort:
    def writeline(self, lineuser, line):
           handle = self._gethandle(lineuser)
           handle.write(line)
+
+   def sort(self, paths):
+       for path in paths:
+          with path.open() as f:
+             lines = f.readlines()
+             for line in lines:
+                 lineuser = get_user(line)
+                 self.writeline(lineuser, line)
 
 
 if __name__ == "__main__":
@@ -93,11 +102,6 @@ if __name__ == "__main__":
     
     currentuser = ''
     
-    sorter = UserSort(cachelimit=args.cachelimit)
-    for path in paths:
-       with path.open() as f:
-          lines = f.readlines()
-          for line in lines:
-              lineuser = get_user(line)
-              sorter.writeline(lineuser, line)
+    sorter = UserSort(cachelimit=args.cachelimit, scanident=args.scanident)
+    sorter.sort(paths)
     

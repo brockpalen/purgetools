@@ -1,9 +1,9 @@
-import pytest, sys, argparse, os
+import pytest, sys, argparse, os, shutil, pathlib, filecmp
 from pprint import PrettyPrinter as pp
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
 
-from userlist import get_user, parse_args, get_dir_paths
+from userlist import get_user, parse_args, get_dir_paths, UserSort
 
 
 #########  input checking tests ##############
@@ -78,3 +78,35 @@ def test_get_dir_paths(scanidents_txt):
         print(x.name)
     assert 4 == len(get_dir_paths(scanidents_txt, "testident"))
 
+@pytest.fixture
+def example_path(tmp_path, path_test):
+    """stage example data for UserSort()"""
+    tdata = path_test / "data" / "ident-example-support.txt"
+    ddata = tmp_path / "ident-example-support.txt"
+
+    shutil.copy(tdata, ddata)
+
+    return tmp_path
+
+def test_UserSort(example_path, path_test):
+    """pass example data through UserSort and compare output files"""
+    os.chdir(example_path)
+    sorter = UserSort(scanident="ident-example")
+    sorter.sort([example_path / "ident-example-support.txt"])
+
+    # delete to force flushing of buffers
+    del sorter
+
+    # should produce three purge lists
+    exptected_purge = ["ident-example-bennet.purge.txt", "ident-example-mmiranda.purge.txt", "ident-example-msbritt.purge.txt"]
+    
+    # should be exactly 4 files after running
+    assert len(list(example_path.glob('*'))) == 4
+    
+    # compare the contents 
+    for x in exptected_purge:
+        p1 = example_path / str(x)
+        p2 = path_test / "data" / str(x)
+        print(p1)
+        print(p2)
+        assert filecmp.cmp(p1, p2, shallow=False)

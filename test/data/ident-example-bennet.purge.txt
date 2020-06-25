@@ -1,0 +1,6 @@
+-rw-r--r-- bennet support 578.000  B Oct 22 2019 09:35 /scratch/support_root/support/bennet/haoransh/DDA_2D_60x70_kulow_1.batch
+-rw-r--r-- bennet support 823.000  B Oct 22 2019 09:38 /scratch/support_root/support/bennet/haoransh/slurm-18847_1.out
+-rw-r--r-- bennet support 823.000  B Oct 22 2019 09:38 /scratch/support_root/support/bennet/haoransh/slurm-18847_2.out
+-rw-r--r-- bennet support 823.000  B Oct 22 2019 09:38 /scratch/support_root/support/bennet/haoransh/slurm-18847_3.out
+-rw-r--r-- bennet support 823.000  B Oct 22 2019 09:38 /scratch/support_root/support/bennet/haoransh/slurm-18847_4.out
+-rw-r--r-- bennet support   4.138 KB Oct 22 2019 09:38 /scratch/support_root/support/bennet/haoransh/test_DDA_hs_PBC_period_flux_60x70_kulow_1.m
