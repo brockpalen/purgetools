@@ -1,9 +1,11 @@
 import pytest, sys, argparse, os
-
+from pprint import PrettyPrinter as pp
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
-print(sys.path)
-from userlist import get_user, parse_args
+
+from userlist import get_user, parse_args, get_dir_paths
+
+
 #########  input checking tests ##############
 
 @pytest.mark.parametrize("input", ["hello-world_brock", "asdf124-jeff", "1234_world"])
@@ -58,4 +60,21 @@ def test_get_user(dwalk_line):
     assert (user == "msbritt")
     
 
+# create test list of scanident files
+@pytest.fixture
+def scanidents_txt(tmp_path):
+    """ create a number of test 'txt' files to scan"""
+    suffixs = [ "a", "b", "c", "d"]
+    for f in suffixs:
+        p = tmp_path / f"testident-{f}.txt"
+        p.touch()
+
+    return tmp_path
+
+def test_get_dir_paths(scanidents_txt):
+    """make sure get_dir_paths() doesn't miss any entries"""
+    print(dir(scanidents_txt))
+    for x in scanidents_txt.iterdir():
+        print(x.name)
+    assert 4 == len(get_dir_paths(scanidents_txt, "testident"))
 
