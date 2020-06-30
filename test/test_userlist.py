@@ -3,7 +3,7 @@ from pprint import PrettyPrinter as pp
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
 
-from userlist import get_user, parse_args, get_dir_paths, UserSort
+from userlist import get_user, parse_args, get_dir_paths, UserSort, UserNotify
 
 
 #########  input checking tests ##############
@@ -110,3 +110,16 @@ def test_UserSort(example_path, path_test):
         print(p1)
         print(p2)
         assert filecmp.cmp(p1, p2, shallow=False)
+
+
+def test_UserNotify_nopath():
+    """Check throws on required inputs"""
+    with pytest.raises(BaseException):
+        n = UserNotify()
+
+def test_UserNotify(tmp_path, path_test):
+    """copy the purge"""
+    os.chdir(path_test / "data")
+    n = UserNotify(notifypath=tmp_path)
+    n.apply()
+    assert len(list(tmp_path.glob('*'))) == 3

@@ -2,7 +2,7 @@
 
 ## -u is needed to avoid buffering stdout 
 
-import argparse, pathlib, subprocess, configparser
+import argparse, pathlib, subprocess, configparser, shutil
 import pprint, time
 from collections import OrderedDict
 import sys
@@ -86,6 +86,31 @@ class UserSort:
                  lineuser = get_user(line)
                  self.writeline(lineuser, line)
 
+# class that notifies user by
+#  1. Copy the *purge* files to a public location
+#  2. Set the permissions/ownership of the copy
+#  3. Email a template to the user with location
+class UserNotify:
+  
+   def __init__(self, email=False, notifypath=False, mask=0o500, template=False):
+       self._email=email            # email user location of the file
+       self._mask=mask              # mask to set the file to 
+       self._notifypath=notifypath   # path to put the notices in 
+       self._template=template      # location of email template
+
+    
+       # check requireds
+       if( not notifypath ):
+         raise Exception("no path given for notification user logs")
+
+   def apply(self):
+       """do what needs to be done"""
+       lists = pathlib.Path.cwd().glob('*.purge.txt')
+       for s_file in lists:
+           name = s_file.name
+           d_file = pathlib.Path(f"{self._notifypath}") / name
+           shutil.copy(s_file, d_file)
+
 
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
@@ -104,4 +129,5 @@ if __name__ == "__main__":
     
     sorter = UserSort(cachelimit=args.cachelimit, scanident=args.scanident)
     sorter.sort(paths)
-    
+   
+    #notifier = UserNotify(mask=config['DEFAULT']['mask']) 
