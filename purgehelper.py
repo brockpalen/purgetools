@@ -24,11 +24,13 @@ def parse_args(args):
 class PurgeObject:
     def __init__(self, path=False):
         """setup the path"""
-    def check_valid(self):
+        self._check_valid(path)
+
+    def _check_valid(self, path):
         """Check if valid file and exists"""
-        
-        if Path(path).is_file():
-           return True
+        p = pathlib.Path(path)
+        if p.is_file():
+           self._path=p
         else:
            raise Exception(f"File {path} does not exist")
     
