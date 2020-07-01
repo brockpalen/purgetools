@@ -1,4 +1,4 @@
-import pytest, sys, argparse, os, shutil, pathlib, filecmp
+import pytest, sys, argparse, os, shutil, pathlib, filecmp, stat
 from pprint import PrettyPrinter as pp
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
@@ -113,7 +113,7 @@ def test_UserSort(example_path, path_test):
 
 
 def test_UserNotify_nopath():
-    """Check throws on required inputs"""
+    """Check throws on required inputs for UserNotify"""
     with pytest.raises(BaseException):
         n = UserNotify()
 
@@ -122,4 +122,9 @@ def test_UserNotify(tmp_path, path_test):
     os.chdir(path_test / "data")
     n = UserNotify(notifypath=tmp_path)
     n.apply()
-    assert len(list(tmp_path.glob('*'))) == 3
+    result = tmp_path.glob('*')
+    assert len(list(result)) == 3   # should be 3 files when complete
+    for f in tmp_path.glob('*'):
+        print(f)
+        assert stat.filemode(f.stat().st_mode) == "-r--------"  # default should be readable only by the user
+    

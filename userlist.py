@@ -92,9 +92,9 @@ class UserSort:
 #  3. Email a template to the user with location
 class UserNotify:
   
-   def __init__(self, email=False, notifypath=False, mask=0o500, template=False):
+   def __init__(self, email=False, notifypath=False, mode=0o400, template=False):
        self._email=email            # email user location of the file
-       self._mask=mask              # mask to set the file to 
+       self._mode=mode              # mode to set the file to 
        self._notifypath=notifypath   # path to put the notices in 
        self._template=template      # location of email template
 
@@ -110,6 +110,8 @@ class UserNotify:
            name = s_file.name
            d_file = pathlib.Path(f"{self._notifypath}") / name
            shutil.copy(s_file, d_file)
+           # set permissions
+           d_file.chmod(self._mode)
 
 
 if __name__ == "__main__":
