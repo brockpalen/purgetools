@@ -117,14 +117,28 @@ def test_UserNotify_nopath():
     with pytest.raises(BaseException):
         n = UserNotify()
 
-def test_UserNotify(tmp_path, path_test):
+def test_UserNotify(tmp_path, path_test, monkeypatch):
     """copy the purge"""
+
+    # replace shutil.chown() with a check for the expected users
+    # this keeps from the users being actually needed
+    def mockreturn(*args, **kwargs):
+        # check that the user passed is in the list
+        users = ['msbritt', 'bennet', 'mmiranda']
+        if kwargs['user'] in users:
+            return True
+
+        else: 
+            raise Exception("invalid user passwd to shutil.chown")
+
+
+    monkeypatch.setattr(shutil, "chown", mockreturn)
+
     os.chdir(path_test / "data")
     n = UserNotify(notifypath=tmp_path)
     n.apply()
     result = tmp_path.glob('*')
     assert len(list(result)) == 3   # should be 3 files when complete
     for f in tmp_path.glob('*'):
-        print(f)
         assert stat.filemode(f.stat().st_mode) == "-r--------"  # default should be readable only by the user
     

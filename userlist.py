@@ -2,7 +2,7 @@
 
 ## -u is needed to avoid buffering stdout 
 
-import argparse, pathlib, subprocess, configparser, shutil
+import argparse, pathlib, subprocess, configparser, shutil, re
 import pprint, time
 from collections import OrderedDict
 import sys
@@ -112,6 +112,21 @@ class UserNotify:
            shutil.copy(s_file, d_file)
            # set permissions
            d_file.chmod(self._mode)
+           # set owner
+           username = self._getuser(d_file)
+           shutil.chown(d_file, user=username)
+
+   def _getuser(self, d_file):
+       """Get username from purge list"""
+       name = d_file.name
+       # format it {ident}-{user}.purge.txt
+       match = re.match(r".+-(\w+).purge.txt", name)
+       if match:
+          return match.group(1)
+       else:
+          raise Exception(f"Problem with parsing user in {name}")
+
+           
 
 
 if __name__ == "__main__":
