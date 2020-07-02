@@ -1,9 +1,10 @@
 import pytest, sys, os, time, datetime, pathlib, tempfile
 from pprint import PrettyPrinter as pp
+from contextlib import contextmanager
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
 
-from purgehelper import parse_args, PurgeObject, PurgeError, PurgeNotFileError
+from purgehelper import parse_args, PurgeObject, PurgeError, PurgeNotFileError, PurgeDaysUnderError
 
 @pytest.mark.parametrize("InvalidArgs", [
                                  ('--days', '5'),
@@ -88,10 +89,15 @@ def stagepath():
   #       yield path
     return tempfile.mkdtemp()
 
-@pytest.mark.parametrize("kwargs", [
-                { 'days': 60}  # days over
+@contextmanager
+def does_not_raise():
+    yield
+
+@pytest.mark.parametrize("kwargs, expected, excep", [
+                ({ 'days': 60}, 1, does_not_raise()),  # 75 days > 60
+                ({ 'days': 80}, 0, pytest.raises(PurgeDaysUnderError))  # 75 days < 80 
                 ])     
-def test_purgeObject_stage(agedfile, stagepath, kwargs):
+def test_purgeObject_stage(agedfile, stagepath, kwargs, expected, excep):
     """ check staging of old files"""
     po = PurgeObject(path=agedfile, stagepath=stagepath, **kwargs)
     num_f_before = 0
@@ -101,21 +107,23 @@ def test_purgeObject_stage(agedfile, stagepath, kwargs):
  
     print(f"Number of files before: {num_f_before}")
 
-    po.applyrules()  # take action on file
-    
-    # count number of files after and at destimation
-    num_f_after = 0
-    for f in pathlib.Path(agedfile).parent.iterdir():
-       if f.is_file():
-          num_f_after += 1
+    with excep:
+       po.applyrules()  # take action on file
+       
+       # count number of files after and at destimation
+       num_f_after = 0
+       for f in pathlib.Path(agedfile).parent.iterdir():
+          if f.is_file():
+             num_f_after += 1
 
-    print(f"Number of files after: {num_f_after}")
+       print(f"Number of files after: {num_f_after}")
 
-    print(f"Stage: {stagepath}")
-    stagepath = pathlib.Path(stagepath)
-    num_f_dest = 0
-    for f in stagepath.glob('**/*'):
-       if f.is_file():
-          num_f_dest += 1
+       print(f"Stage: {stagepath}")
+       stagepath = pathlib.Path(stagepath)
+       num_f_dest = 0
+       for f in stagepath.glob('**/*'):
+          if f.is_file():
+             num_f_dest += 1
 
-    print(f"Number of files staged: {num_f_dest}")
+       print(f"Number of files staged: {num_f_dest}")
+       assert (num_f_dest == expected)

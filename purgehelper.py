@@ -23,7 +23,7 @@ def parse_args(args):
 
 # print with a timestamp
 def dtprint(string):
-    now = datetime.now()
+    now = datetime.datetime.fromtimestamp(time.time())
     s = now.strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{s}] {string}")
 
@@ -105,14 +105,12 @@ class PurgeObject:
            #  eg.   /scratch/sr/brockp/topurge.txt
            #  dest: /stagepath/scratch/sr/brockp/topurge.txt
            parent = self._path.parent  # get path part 
-           print(f"parent -> {parent}")
-           print(f"stagepath before: {self._stagepath}")
            sd = pathlib.Path(self._stagepath) / parent.relative_to('/')
-           print(f"stagepath after: {sd}")
            sd.mkdir(parents=True, exist_ok=True)
            
            # move / rename file to new location
            target = sd / self._path.name
+           dtprint(f"Staging {self._path}")
            self._path.rename(target)
            
 
