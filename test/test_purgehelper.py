@@ -1,9 +1,9 @@
-import pytest, sys, os, time, datetime
+import pytest, sys, os, time, datetime, pathlib, tempfile
 from pprint import PrettyPrinter as pp
 #needed to import functions in odd paths
 sys.path.append(os.path.abspath('./'))
 
-from purgehelper import parse_args, PurgeObject
+from purgehelper import parse_args, PurgeObject, PurgeError, PurgeNotFileError
 
 @pytest.mark.parametrize("InvalidArgs", [
                                  ('--days', '5'),
@@ -58,12 +58,64 @@ def agedfile(tmp_path):
 ## currently need to break out the fixture input and string inputs TODO
 #@pytest.mark.parametrize("strpath", [agedfile])
 def test_PurgeObject(agedfile):
-    po = PurgeObject(path=agedfile)
+    po = PurgeObject(path=agedfile, days=5, purge=True)
     assert po._path == agedfile     # file should exist and load into object
 
 ## currently need to break out the fixture input and string inputs TODO
 @pytest.mark.parametrize("strpath", ['/garbage/path/file.txt'])
 def test_PurgeObject_bad(strpath):
     """make sure to bail if file doesn't exist"""
-    with pytest.raises(BaseException):
-        po = PurgeObject(path=strpath)
+    with pytest.raises(PurgeNotFileError):
+        po = PurgeObject(path=strpath, days=5, purge=True)
+
+
+@pytest.mark.parametrize("kwargs", [
+                { 'days': 5,  'stagepath': '/tmp', 'purge': True},   # can't stage and purge
+                { 'purge': False},     		# days must be given to build rules
+                {},  			   	# days must be given to build rules (no args)
+                { 'days': 5 }  		        # valid days, but no stagepath or purge
+                ])
+def test_purgeObject_bad_params(agedfile, kwargs):
+    """check that we don't do anything if invalid combinations are not false"""
+    with pytest.raises(PurgeError):
+        po = PurgeObject(path=agedfile, **kwargs)
+
+@pytest.fixture
+def stagepath():
+    """create extra tmp path as only one tmp_path can exist at a time"""
+  #  with tempfile.TemporaryDirectory() as stagepath:
+  #       path =  pathlib.Path(stagepath)
+  #       yield path
+    return tempfile.mkdtemp()
+
+@pytest.mark.parametrize("kwargs", [
+                { 'days': 60}  # days over
+                ])     
+def test_purgeObject_stage(agedfile, stagepath, kwargs):
+    """ check staging of old files"""
+    po = PurgeObject(path=agedfile, stagepath=stagepath, **kwargs)
+    num_f_before = 0
+    for f in pathlib.Path(agedfile).parent.iterdir():
+       if f.is_file():
+          num_f_before += 1
+ 
+    print(f"Number of files before: {num_f_before}")
+
+    po.applyrules()  # take action on file
+    
+    # count number of files after and at destimation
+    num_f_after = 0
+    for f in pathlib.Path(agedfile).parent.iterdir():
+       if f.is_file():
+          num_f_after += 1
+
+    print(f"Number of files after: {num_f_after}")
+
+    print(f"Stage: {stagepath}")
+    stagepath = pathlib.Path(stagepath)
+    num_f_dest = 0
+    for f in stagepath.glob('**/*'):
+       if f.is_file():
+          num_f_dest += 1
+
+    print(f"Number of files staged: {num_f_dest}")
