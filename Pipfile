@@ -12,6 +12,8 @@ pytest-cov = "*"
 codecov = "*"
 pydocstyle = "*"
 black = "==19.10b0"
+pre-commit = "*"
+yamllint = "*"
 
 [packages]
 
