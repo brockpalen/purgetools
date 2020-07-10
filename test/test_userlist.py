@@ -157,7 +157,7 @@ def test_UserNotify(tmp_path, path_test, monkeypatch):
 
     os.chdir(path_test / "data")
     n = UserNotify(notifypath=tmp_path)
-    n.apply()
+    n.copy()
     result = tmp_path.glob("*")
     assert len(list(result)) == 3  # should be 3 files when complete
     for f in tmp_path.glob("*"):

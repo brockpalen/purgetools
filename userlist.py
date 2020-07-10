@@ -4,13 +4,13 @@
 
 import argparse
 import configparser
+import logging
 import pathlib
 import pprint
 import re
 import shutil
-import subprocess
+import stat
 import sys
-import time
 from collections import OrderedDict
 
 # load config file settings
@@ -35,6 +35,18 @@ def parse_args(args):
     parser.add_argument(
         "--cachelimit", help="Number of file hanels to hold open", type=int, default=100
     )
+
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v",
+        "--verbose",
+        help="Increase messages, including files as added",
+        action="store_true",
+    )
+    verbosity.add_argument(
+        "-q", "--quiet", help="Decrease messages", action="store_true"
+    )
+
     args = parser.parse_args(args)
     return args
 
@@ -118,21 +130,36 @@ class UserNotify:
         if not notifypath:
             raise Exception("no path given for notification user logs")
 
-    def apply(self):
-        """do what needs to be done"""
+    def copy(self):
+        """
+        Copy per user purge lists to public location and set permissions.
+
+        For each per user purge list ( *.purge.txt )
+        Copy them to notifypath
+        Change ownership to mode
+        Set owner to user
+        """
         lists = pathlib.Path.cwd().glob("*.purge.txt")
         for s_file in lists:
             name = s_file.name
             d_file = pathlib.Path(f"{self._notifypath}") / name
+            logging.debug(f"Copying {s_file} to {d_file}")
             shutil.copy(s_file, d_file)
-            # set permissions
-            d_file.chmod(self._mode)
             # set owner
             username = self._getuser(d_file)
-            shutil.chown(d_file, user=username)
+
+            try:
+                logging.debug(f"Change {d_file} owner to {username}")
+                shutil.chown(d_file, user=username)
+            except LookupError as e:  # username not found
+                logging.warning(f"{e}")
+
+            # set permissions
+            logging.debug(f"Set permissions on {d_file} to {stat.filemode(self._mode)}")
+            d_file.chmod(self._mode)
 
     def _getuser(self, d_file):
-        """Get username from purge list"""
+        """Get username from purge list filename"""
         name = d_file.name
         # format it {ident}-{user}.purge.txt
         match = re.match(r".+-(\w+).purge.txt", name)
@@ -146,6 +173,13 @@ if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     args = parse_args(sys.argv[1:])
 
+    if args.quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     paths = get_dir_paths(scanident=args.scanident)
 
     pp.pprint(paths)
@@ -156,7 +190,10 @@ if __name__ == "__main__":
 
     currentuser = ""
 
+    # sort + merge per path scans into per user lists
     sorter = UserSort(cachelimit=args.cachelimit, scanident=args.scanident)
     sorter.sort(paths)
 
-    # notifier = UserNotify(mask=config['DEFAULT']['mask'])
+    # notify the user of the location of their data
+    notifier = UserNotify(notifypath=config["userlist"]["notifypath"])
+    notifier.copy()
