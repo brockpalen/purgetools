@@ -35,10 +35,8 @@ You may wish to wrap this in spack (please do)
 ## Testing & Coverage
 
 ```
-pip3 install --user pytest
-
-#run all tests including mpifileutils
-pytest
+pip3 install --user pipenv
+pipenv install --dev
 
 #run only purge tools tests
 pytest test
