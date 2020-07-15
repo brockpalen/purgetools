@@ -1,18 +1,27 @@
 import argparse
 import filecmp
+import logging
 import os
-import pathlib
 import shutil
+import smtplib
 import stat
 import sys
 from pprint import PrettyPrinter as pp
+from unittest.mock import MagicMock
 
 import pytest
 
 # needed to import functions in odd paths
 sys.path.append(os.path.abspath("./"))
 
-from userlist import UserNotify, UserSort, get_dir_paths, get_user, parse_args
+from userlist import (
+    EmailFromTemplate,
+    UserNotify,
+    UserSort,
+    get_dir_paths,
+    get_user,
+    parse_args,
+)
 
 #########  input checking tests ##############
 
@@ -164,3 +173,43 @@ def test_UserNotify(tmp_path, path_test, monkeypatch):
         assert (
             stat.filemode(f.stat().st_mode) == "-r--------"
         )  # default should be readable only by the user
+
+
+def test_EmailFromTemplate(tmp_path, monkeypatch):
+    # setup test data template
+    s_template = """this is my junk template $hello and $world"""
+    d_template = tmp_path / "test.tpl"
+    with d_template.open("w") as template:
+        template.write(s_template)
+
+    composed = """Subject: my subject
+From: hpc systems <arcts-support@umich.edu>
+To: Brock Palen <brockp@umich.edu>
+reply-to: ARC-TS Support <arcts-support@umich.edu>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+this is my junk template world and hello
+"""
+
+    # replace  SMTP.send_message()
+    smtp = MagicMock(spec=smtplib.SMTP)
+    monkeypatch.setattr(smtplib.SMTP, "send_message", smtp)
+
+    email = EmailFromTemplate(template=d_template)
+    to_user = ("Brock Palen", "brockp@umich.edu")
+    from_user = ("hpc systems", "arcts-support@umich.edu")
+    reply_to = ("ARC-TS Support", "arcts-support@umich.edu")
+    email.send(
+        to_user=to_user,
+        from_user=from_user,
+        reply_to=reply_to,
+        subject="my subject",
+        data={"hello": "world", "world": "hello"},
+    )
+    # grab composed message as string and compare
+    message = smtp.call_args[0][0].as_string()
+    logging.debug(f"Composed message: {message}")
+    # compare message passed to smtplib with expected
+    assert message == composed

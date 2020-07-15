@@ -9,9 +9,13 @@ import pathlib
 import pprint
 import re
 import shutil
+import smtplib
 import stat
 import sys
 from collections import OrderedDict
+from email.headerregistry import Address
+from email.message import EmailMessage
+from string import Template
 
 # load config file settings
 config = configparser.ConfigParser()
@@ -121,10 +125,8 @@ class UserSort:
 #  3. Email a template to the user with location
 class UserNotify:
     def __init__(self, email=False, notifypath=False, mode=0o400, template=False):
-        self._email = email  # email user location of the file
         self._mode = mode  # mode to set the file to
         self._notifypath = notifypath  # path to put the notices in
-        self._template = template  # location of email template
 
         # check requireds
         if not notifypath:
@@ -167,6 +169,55 @@ class UserNotify:
             return match.group(1)
         else:
             raise Exception(f"Problem with parsing user in {name}")
+
+
+class EmailFromTemplate:
+    """
+    Email a single entity using a template.
+
+    """
+
+    def __init__(self, template=False):
+        """
+        Build email template
+
+        template pathlib path to template
+        """
+        self.template = template
+
+    def send(
+        self, to_user=False, from_user=False, subject=False, reply_to=False, data=False
+    ):
+        """
+        Send the actual message.
+
+        to_user Tuple ("Display Name", "user@domain.com")
+        from_user Tuple ("Display Name", "user@domain.com")
+        reply_to Tuple ("Display Name", "user@domain.com")   Optional
+        subject str  Subjet Line
+        data dict Dict of substitution values for the Template
+        """
+        msg = EmailMessage()
+        logging.debug(f"Subject set to: {subject}")
+        msg["Subject"] = subject
+        from_composed = Address(display_name=from_user[0], addr_spec=from_user[1])
+        logging.debug(f"Email From: {from_composed}")
+        msg["From"] = from_composed
+        to_composed = Address(display_name=to_user[0], addr_spec=to_user[1])
+        logging.debug(f"Email to: {to_composed}")
+        msg["To"] = to_composed
+
+        if reply_to:
+            reply_to_composed = Address(display_name=reply_to[0], addr_spec=reply_to[1])
+            logging.debug(f"Reply to: {reply_to_composed}")
+            msg["reply-to"] = reply_to_composed
+
+        with open(self.template) as f:
+            tpl = Template(f.read())
+            msg.set_content(tpl.safe_substitute(**data))
+
+        with smtplib.SMTP("localhost") as s:
+            s.send_message(msg)
 
 
 if __name__ == "__main__":
