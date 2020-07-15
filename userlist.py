@@ -7,6 +7,7 @@ import configparser
 import logging
 import pathlib
 import pprint
+import pwd
 import re
 import shutil
 import smtplib
@@ -38,6 +39,9 @@ def parse_args(args):
     )
     parser.add_argument(
         "--cachelimit", help="Number of file hanels to hold open", type=int, default=100
+    )
+    parser.add_argument(
+        "--email", help="Email users a notice of their purge list", action="store_true"
     )
 
     verbosity = parser.add_mutually_exclusive_group()
@@ -140,6 +144,8 @@ class UserNotify:
         Copy them to notifypath
         Change ownership to mode
         Set owner to user
+
+        return tuple (username, path to file)
         """
         lists = pathlib.Path.cwd().glob("*.purge.txt")
         for s_file in lists:
@@ -159,6 +165,8 @@ class UserNotify:
             # set permissions
             logging.debug(f"Set permissions on {d_file} to {stat.filemode(self._mode)}")
             d_file.chmod(self._mode)
+
+            yield username, d_file
 
     def _getuser(self, d_file):
         """Get username from purge list filename"""
@@ -185,11 +193,11 @@ class EmailFromTemplate:
         """
         self.template = template
 
-    def send(
+    def compose(
         self, to_user=False, from_user=False, subject=False, reply_to=False, data=False
     ):
         """
-        Send the actual message.
+        Compose the actual message.
 
         to_user Tuple ("Display Name", "user@domain.com")
         from_user Tuple ("Display Name", "user@domain.com")
@@ -197,27 +205,33 @@ class EmailFromTemplate:
         subject str  Subjet Line
         data dict Dict of substitution values for the Template
         """
-        msg = EmailMessage()
+        self.msg = EmailMessage()
         logging.debug(f"Subject set to: {subject}")
-        msg["Subject"] = subject
+        self.msg["Subject"] = subject
         from_composed = Address(display_name=from_user[0], addr_spec=from_user[1])
         logging.debug(f"Email From: {from_composed}")
-        msg["From"] = from_composed
+        self.msg["From"] = from_composed
         to_composed = Address(display_name=to_user[0], addr_spec=to_user[1])
         logging.debug(f"Email to: {to_composed}")
-        msg["To"] = to_composed
+        self.msg["To"] = to_composed
 
         if reply_to:
             reply_to_composed = Address(display_name=reply_to[0], addr_spec=reply_to[1])
             logging.debug(f"Reply to: {reply_to_composed}")
-            msg["reply-to"] = reply_to_composed
+            self.msg["reply-to"] = reply_to_composed
 
         with open(self.template) as f:
             tpl = Template(f.read())
-            msg.set_content(tpl.safe_substitute(**data))
+            self.msg.set_content(tpl.safe_substitute(**data))
 
+    def as_string(self):
+        """return composed message as string."""
+        return self.msg.as_string()
+
+    def send(self):
+        """Send actual message."""
         with smtplib.SMTP("localhost") as s:
-            s.send_message(msg)
+            s.send_message(self.msg)
 
 
 if __name__ == "__main__":
@@ -247,4 +261,23 @@ if __name__ == "__main__":
 
     # notify the user of the location of their data
     notifier = UserNotify(notifypath=config["userlist"]["notifypath"])
-    notifier.copy()
+    for username, path in notifier.copy():
+        logging.debug(f"User Purge list: {path}")
+
+        # email setup
+        email = EmailFromTemplate(
+            template=pathlib.Path(__file__).resolve().parent / "etc/user_notify.tpl"
+        )
+        to_user = (pwd.getpwnam(username).pw_gecos, f"{username}@umich.edu")
+        from_user = ("ARC-TS Support", "arcts-support@umich.edu")
+        subject = "ARC-TS Scratch Purge Notice"
+        email.compose(
+            to_user=to_user, from_user=from_user, subject=subject, data={"path": path}
+        )
+        logging.debug(f"Composed message \n {email.as_string()}")
+
+        # send
+        if args.email:
+            # send it
+            logging.debug(f"Sending message for {username}")
+            email.send()

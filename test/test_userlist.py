@@ -166,7 +166,7 @@ def test_UserNotify(tmp_path, path_test, monkeypatch):
 
     os.chdir(path_test / "data")
     n = UserNotify(notifypath=tmp_path)
-    n.copy()
+    list(n.copy())  # copy is a generator
     result = tmp_path.glob("*")
     assert len(list(result)) == 3  # should be 3 files when complete
     for f in tmp_path.glob("*"):
@@ -201,13 +201,15 @@ this is my junk template world and hello
     to_user = ("Brock Palen", "brockp@umich.edu")
     from_user = ("hpc systems", "arcts-support@umich.edu")
     reply_to = ("ARC-TS Support", "arcts-support@umich.edu")
-    email.send(
+    email.compose(
         to_user=to_user,
         from_user=from_user,
         reply_to=reply_to,
         subject="my subject",
         data={"hello": "world", "world": "hello"},
     )
+    print(email.as_string())
+    email.send()
     # grab composed message as string and compare
     message = smtp.call_args[0][0].as_string()
     logging.debug(f"Composed message: {message}")
