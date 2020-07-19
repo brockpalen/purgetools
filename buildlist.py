@@ -14,7 +14,7 @@ from functools import partial
 
 # load config file settings
 config = configparser.ConfigParser()
-config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/buildlist.ini"))
+config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/purgetools.ini"))
 
 # grab cli options
 parser = argparse.ArgumentParser(
@@ -85,7 +85,9 @@ def build_scanlist(path, dontwalk=False):
     else:
         raise Exception(f"Path {args.path} does not exist")
 
-    ex_paths = set(check_path_exclude(path, config["DEFAULT"]["ignorepath"].split(",")))
+    ex_paths = set(
+        check_path_exclude(path, config["buildlist"]["ignorepath"].split(","))
+    )
 
     # can only scan directories
     sc_paths = set()

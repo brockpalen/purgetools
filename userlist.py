@@ -20,7 +20,7 @@ from string import Template
 
 # load config file settings
 config = configparser.ConfigParser()
-config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/buildlist.ini"))
+config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/purgetools.ini"))
 
 
 def parse_args(args):
@@ -306,7 +306,9 @@ if __name__ == "__main__":
     sorter.sort(paths)
 
     # notify the user of the location of their data
-    notifier = UserNotify(notifypath=config["userlist"]["notifypath"])
+    notifier = UserNotify(
+        notifypath=config["userlist"]["notifypath"], mode=config["userlist"]["mode"]
+    )
     for username, path in notifier.copy():
         logging.debug(f"User Purge list: {path}")
         email_purgelist(path=path, username=username)
