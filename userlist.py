@@ -234,6 +234,52 @@ class EmailFromTemplate:
             s.send_message(self.msg)
 
 
+def email_purgelist(path=False, username=False):
+    """
+    Email the user a template where they can find their data.
+
+    path pathlib purge list location on cluster
+    username str username on the system to look up needed informatoin
+    """
+
+    # read all values from config file
+    email_template = config["userlist"]["emailtemplate"]
+    cluster = config["userlist"]["cluster"]
+    email_domain = config["userlist"]["emaildomain"]
+    from_user = config["userlist"]["fromuser"]
+    from_email = config["userlist"]["fromemail"]
+    email_subject = config["userlist"]["emailsubject"]
+    policy_link = config["userlist"]["policylink"]
+
+    # get users common name
+    common_name = pwd.getpwnam(username).pw_gecos
+
+    # setup template subsitution dict
+    sub_data = {
+        "path": path,
+        "username": username,
+        "commonname": common_name,
+        "cluster": cluster,
+        "policylink": policy_link,
+    }
+
+    # email setup
+    email = EmailFromTemplate(
+        template=pathlib.Path(__file__).resolve().parent / "etc" / email_template
+    )
+    to_user = (common_name, f"{username}@{email_domain}")
+    from_user = (from_user, from_email)
+    subject = Template(email_subject).safe_substitute(**sub_data)
+    email.compose(to_user=to_user, from_user=from_user, subject=subject, data=sub_data)
+    logging.debug(f"Composed message \n {email.as_string()}")
+
+    # send
+    if args.email:
+        # send it
+        logging.debug(f"Sending message for {username}")
+        email.send()
+
+
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     args = parse_args(sys.argv[1:])
@@ -263,21 +309,4 @@ if __name__ == "__main__":
     notifier = UserNotify(notifypath=config["userlist"]["notifypath"])
     for username, path in notifier.copy():
         logging.debug(f"User Purge list: {path}")
-
-        # email setup
-        email = EmailFromTemplate(
-            template=pathlib.Path(__file__).resolve().parent / "etc/user_notify.tpl"
-        )
-        to_user = (pwd.getpwnam(username).pw_gecos, f"{username}@umich.edu")
-        from_user = ("ARC-TS Support", "arcts-support@umich.edu")
-        subject = "ARC-TS Scratch Purge Notice"
-        email.compose(
-            to_user=to_user, from_user=from_user, subject=subject, data={"path": path}
-        )
-        logging.debug(f"Composed message \n {email.as_string()}")
-
-        # send
-        if args.email:
-            # send it
-            logging.debug(f"Sending message for {username}")
-            email.send()
+        email_purgelist(path=path, username=username)

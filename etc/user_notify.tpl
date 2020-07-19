@@ -1,6 +1,19 @@
 
-You are reciving this automated message because you have data at risk of deletion.
+Hello, ${commonname}
 
-If no action is taken this data will be removed in compliance with the policy of this system as oulined in the active data policy section of the user guide.
+You have data that is scheduled for automatic removal from ${cluster}.
+A list of all files to be removed is located on the system at:
+ ${path}
 
-A list of your files that will be removed is located at: ${path}
+What you need to do:
+
+You have two weeks to move your data before it is deleted.
+If you have an active MiStorage, Turbo, Locker, or Data Den volume,
+you can move your data there, or to local storage through sftp or Globus. 
+
+Policies:
+You can read scratch policies on our website ( ${policylink} )
+
+Thank You
+ARC-TS Support
+arcts-support@umich.edu
