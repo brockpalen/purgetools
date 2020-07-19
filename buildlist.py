@@ -24,7 +24,18 @@ parser.add_argument(
     "--days", help="Number of days (Default 60)", type=int, default="60"
 )
 parser.add_argument(
-    "--np", help="Number of processors (Default 20)", type=int, default=20, metavar="N"
+    "--np",
+    help="Number of ranks for dwalk (Default 4)",
+    type=int,
+    default=4,
+    metavar="N",
+)
+parser.add_argument(
+    "--threads",
+    help="Number of mpiruns at a time (total np * threads) (Default 4)",
+    type=int,
+    default=4,
+    metavar="N",
 )
 parser.add_argument(
     "--progress",
@@ -179,7 +190,7 @@ func = partial(
 )
 
 # walk paths in path in parallel
-with mp.Pool(4) as p:
+with mp.Pool(args.threads) as p:
     p.map(func, scan_set)
     p.close()
     p.join()
