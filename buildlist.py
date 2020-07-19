@@ -4,6 +4,7 @@
 
 import argparse
 import configparser
+import logging
 import multiprocessing as mp
 import pathlib
 import pprint
@@ -138,7 +139,10 @@ def scan_path(
         print("--dryrun given not scanning, exiting")
         return
 
-    subprocess.run(args, check=True)
+    logname = f"{scanident}-{path.name}.log"
+    with open(logname, "w") as log:
+        logging.info(f"Opening log file: {log}")
+        subprocess.run(args, check=True, stderr=subprocess.PIPE, stdout=log)
 
     # dwalk will error if there are no files to sort, but sorting speeds building per user lists
     # dwalk will also not write an output file if there are no entires so test if it exists if so sort it
@@ -167,7 +171,8 @@ def scan_path(
         args += ["--input", f"{scanident}-{path.name}.cache"]
         args += ["--text-output", f"{scanident}-{path.name}.txt"]
 
-        subprocess.run(args, check=True)
+        with open(logname, "a") as log:
+            subprocess.run(args, check=True, stderr=subprocess.PIPE, stdout=log)
 
     else:
         print(f"No Purge candidates for {path.name}")
