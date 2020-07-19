@@ -4,10 +4,12 @@
 
 import argparse
 import configparser
+import multiprocessing as mp
 import pathlib
 import pprint
 import subprocess
 from datetime import datetime
+from functools import partial
 
 # load config file settings
 config = configparser.ConfigParser()
@@ -166,12 +168,18 @@ scan_set = build_scanlist(args.path, dontwalk=args.dontwalk)
 print("Will Scan Following List")
 pp.pprint(scan_set)
 
-for path in scan_set:
-    scan_path(
-        path,
-        scanident=args.scanident,
-        np=args.np,
-        atime=args.days,
-        progress=args.progress,
-        dryrun=args.dryrun,
-    )
+# create partial function so it can be passed to pool.map()
+func = partial(
+    scan_path,
+    scanident=args.scanident,
+    np=args.np,
+    atime=args.days,
+    progress=args.progress,
+    dryrun=args.dryrun,
+)
+
+# walk paths in path in parallel
+with mp.Pool(4) as p:
+    p.map(func, scan_set)
+    p.close()
+    p.join()
