@@ -175,6 +175,9 @@ def test_UserNotify(tmp_path, path_test, monkeypatch):
         )  # default should be readable only by the user
 
 
+@pytest.mark.skipIf(
+    os.environ.get("TRAVIS") == "true", "Skipping this test on Travis CI."
+)
 def test_EmailFromTemplate(tmp_path, monkeypatch):
     # setup test data template
     s_template = """this is my junk template $hello and $world"""
@@ -194,7 +197,7 @@ this is my junk template world and hello
 """
 
     # replace  SMTP.send_message()
-    smtp = MagicMock(spec=smtplib.SMTP)
+    smtp = MagicMock()
     monkeypatch.setattr(smtplib.SMTP, "send_message", smtp)
 
     email = EmailFromTemplate(template=d_template)
