@@ -175,8 +175,8 @@ def test_UserNotify(tmp_path, path_test, monkeypatch):
         )  # default should be readable only by the user
 
 
-@pytest.mark.skipIf(
-    os.environ.get("TRAVIS") == "true", "Skipping this test on Travis CI."
+@pytest.mark.skipif(
+    os.environ.get("TRAVIS") == "true", reason="Skipping this test on Travis CI."
 )
 def test_EmailFromTemplate(tmp_path, monkeypatch):
     # setup test data template
