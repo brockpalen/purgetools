@@ -4,7 +4,6 @@
 
 import argparse
 import configparser
-import datetime
 import logging
 import pathlib
 import pprint
@@ -15,6 +14,7 @@ import smtplib
 import stat
 import sys
 from collections import OrderedDict
+from datetime import datetime
 from email.headerregistry import Address
 from email.message import EmailMessage
 from string import Template
@@ -311,7 +311,8 @@ if __name__ == "__main__":
 
     # notify the user of the location of their data
     notifier = UserNotify(
-        notifypath=config["userlist"]["notifypath"], mode=config["userlist"]["mode"]
+        notifypath=config["userlist"]["notifypath"],
+        mode=int(config["userlist"]["mode"], 8),
     )
     for username, path in notifier.copy():
         logging.debug(f"User Purge list: {path}")
