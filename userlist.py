@@ -4,6 +4,7 @@
 
 import argparse
 import configparser
+import datetime
 import logging
 import pathlib
 import pprint
@@ -251,6 +252,8 @@ def email_purgelist(path=False, username=False):
     email_subject = config["userlist"]["emailsubject"]
     policy_link = config["userlist"]["policylink"]
 
+    today = datetime.now().strftime("%B %-d, %Y")
+
     # get users common name
     common_name = pwd.getpwnam(username).pw_gecos
 
@@ -261,6 +264,7 @@ def email_purgelist(path=False, username=False):
         "commonname": common_name,
         "cluster": cluster,
         "policylink": policy_link,
+        "today": today,
     }
 
     # email setup
