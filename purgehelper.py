@@ -5,6 +5,7 @@
 import argparse
 import configparser
 import datetime
+import logging
 import pathlib
 import pprint
 import subprocess
@@ -13,7 +14,7 @@ import time
 
 # load config file settings
 config = configparser.ConfigParser()
-config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/buildlist.ini"))
+config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/purgetools.ini"))
 
 
 def parse_args(args):
@@ -37,15 +38,19 @@ def parse_args(args):
         required=True,
     )
 
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v",
+        "--verbose",
+        help="Increase messages, including files as added",
+        action="store_true",
+    )
+    verbosity.add_argument(
+        "-q", "--quiet", help="Decrease messages", action="store_true"
+    )
+
     args = parser.parse_args(args)
     return args
-
-
-# print with a timestamp
-def dtprint(string):
-    now = datetime.datetime.fromtimestamp(time.time())
-    s = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[{s}] {string}")
 
 
 # custom exceptions for PurgeObject
@@ -119,15 +124,24 @@ class PurgeObject:
         today = datetime.date.today()
         delta = datetime.timedelta(days=self._days)
         delta = today - delta
+        logging.debug(f"Today: {today} Delta: {delta}")
 
         # if today - days > st_atime continue
         if self._stat.st_atime > time.mktime(delta.timetuple()):
+            logging.debug(
+                f"File Underage: {self._path} st_atime: {self._stat.st_atime}"
+            )
             raise PurgeDaysUnderError(self, "file underage")
 
         # if file is purge remove (CAREFUL) else stage
         if self._purge:
-            dtprint(f"Deleting {self._path}")
-            # no op not implimented
+            logging.info(f"Deleting {self._path} NOT IMPLIMENTED")
+            if dryrun:
+                logging.info("Dryrun requested skipping purge")
+            else:
+                # actaully do it
+                # no op not implimented
+                pass
 
         # stage, don't remove
         else:
@@ -140,12 +154,36 @@ class PurgeObject:
 
             # move / rename file to new location
             target = sd / self._path.name
-            dtprint(f"Staging {self._path}")
-            self._path.rename(target)
+            logging.info(f"Staging {self._path} to {target}")
+            if dryrun:
+                logging.info("Dryrun requested skipping stage/rename")
+            else:
+                # actaully do it
+                self._path.rename(target)
 
 
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     args = parse_args(sys.argv[1:])
 
-    # check it exists or exit
+    if args.quiet:
+        level = logging.WARNING
+    elif args.verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=level)
+
+    try:
+        po = PurgeObject(
+            path=args.file, days=args.days, stagepath=config["purgehelper"]["stagepath"]
+        )
+        po.applyrules(dryrun=args.dryrun)
+
+    except PurgeNotFileError as e:
+        # do stuff here with files that don't exist
+        logging.info(f"{e}")
+    except PurgeDaysUnderError as e:
+        # do stuff here with files that are now under age
+        logging.info(f"{e}")
