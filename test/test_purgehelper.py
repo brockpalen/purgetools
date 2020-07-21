@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import pathlib
 import sys
@@ -67,7 +68,21 @@ def agedfile(tmp_path):
     return f.resolve()
 
 
-##@pytest.mark.parametrize("strpath", [agedfile])
+@pytest.fixture
+def underagefile(tmp_path):
+    """setup a number of example file 1 days last accessed."""
+    # return as a string as PurgeObject expects a string
+    f = tmp_path / "1day-file.txt"
+    f.touch()
+    today = datetime.date.today()
+    delta = datetime.timedelta(days=1)
+    delta = today - delta
+    aTime = time.mktime(delta.timetuple())
+    os.utime(f, (aTime, aTime))  # os.utime takes touple (atime, mtime)
+    return f.resolve()
+
+
+# @pytest.mark.parametrize("strpath", [agedfile])
 # @pytest.mark.parametrize("strpath", [agedfile, '/garbage/path/file.txt'])
 # def test_PurgeObject(strpath, tmp_path):
 #    print(dir(strpath))
@@ -81,18 +96,39 @@ def agedfile(tmp_path):
 
 
 ## currently need to break out the fixture input and string inputs TODO
-# @pytest.mark.parametrize("strpath", [agedfile])
-def test_PurgeObject(agedfile):
-    po = PurgeObject(path=agedfile, days=5, purge=True)
+@pytest.mark.parametrize(
+    "kwargs,ruleargs,fileexists",
+    [
+        pytest.param(
+            {"purge": True},
+            {},
+            False,
+            marks=pytest.mark.xfail(reason="Purge not implimented"),
+        ),
+        ({"purge": True}, {"dryrun": True}, True),
+    ],
+)
+def test_PurgeObject_agedfile_purge(agedfile, caplog, kwargs, ruleargs, fileexists):
+    """Check that object loads if older than 5 days."""
+    po = PurgeObject(path=agedfile, days=5, **kwargs)
+    po.applyrules(**ruleargs)
     assert po._path == agedfile  # file should exist and load into object
+    assert agedfile.is_file() == fileexists
+
+
+def test_PurgeObject_underage(underagefile):
+    """Check that PurgeDaysUnderError is thrown for underage file."""
+    po = PurgeObject(path=underagefile, days=5, purge=True)
+    with pytest.raises(PurgeDaysUnderError):
+        po.applyrules()
 
 
 ## currently need to break out the fixture input and string inputs TODO
 @pytest.mark.parametrize("strpath", ["/garbage/path/file.txt"])
 def test_PurgeObject_bad(strpath):
-    """make sure to bail if file doesn't exist"""
+    """make sure to bail if file doesn't exist."""
     with pytest.raises(PurgeNotFileError):
-        po = PurgeObject(path=strpath, days=5, purge=True)
+        PurgeObject(path=strpath, days=5, purge=True)
 
 
 @pytest.mark.parametrize(
