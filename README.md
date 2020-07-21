@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/brockpalen/purgetools.svg?branch=master)](https://travis-ci.com/brockpalen/purgetools)
+[![codecov](https://codecov.io/gh/brockpalen/purgetools/branch/master/graph/badge.svg)](https://codecov.io/gh/brockpalen/purgetools)
+
+
 # purgetools
 Tools to walk scratch filesystem and manage their contents based on policy
 
