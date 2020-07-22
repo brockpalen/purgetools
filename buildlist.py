@@ -9,6 +9,7 @@ import multiprocessing as mp
 import pathlib
 import pprint
 import subprocess
+import sys
 from datetime import datetime
 from functools import partial
 
@@ -16,49 +17,52 @@ from functools import partial
 config = configparser.ConfigParser()
 config.read(pathlib.Path(__file__).resolve().parent.joinpath("etc/purgetools.ini"))
 
-# grab cli options
-parser = argparse.ArgumentParser(
-    description="Build file lists for groups of directories"
-)
-parser.add_argument("path", help="Path to scan", type=str)
-parser.add_argument(
-    "--days", help="Number of days (Default 60)", type=int, default="60"
-)
-parser.add_argument(
-    "--np",
-    help="Number of ranks for dwalk (Default 4)",
-    type=int,
-    default=4,
-    metavar="N",
-)
-parser.add_argument(
-    "--threads",
-    help="Number of mpiruns at a time (total np * threads) (Default 4)",
-    type=int,
-    default=4,
-    metavar="N",
-)
-parser.add_argument(
-    "--progress",
-    help="How often to print scan progress (Default 60)",
-    type=int,
-    metavar="S",
-    default=60,
-)
-parser.add_argument("--dryrun", help="Print list to scan and quit", action="store_true")
-parser.add_argument(
-    "--dontwalk", help="Don't split <Path> into each directory", action="store_true"
-)
-parser.add_argument(
-    "--scanident",
-    help="Unique identifier for scan to append to logs/files Default D-m-Y)",
-    type=str,
-    default=datetime.now().strftime("%d-%m-%Y"),
-)
 
-args = parser.parse_args()
+def parse_args(args):
+    """Grab CLI Options."""
+    parser = argparse.ArgumentParser(
+        description="Build file lists for groups of directories"
+    )
+    parser.add_argument("path", help="Path to scan", type=str)
+    parser.add_argument(
+        "--days", help="Number of days (Default 60)", type=int, default="60"
+    )
+    parser.add_argument(
+        "--np",
+        help="Number of ranks for dwalk (Default 4)",
+        type=int,
+        default=4,
+        metavar="N",
+    )
+    parser.add_argument(
+        "--threads",
+        help="Number of mpiruns at a time (total np * threads) (Default 4)",
+        type=int,
+        default=4,
+        metavar="N",
+    )
+    parser.add_argument(
+        "--progress",
+        help="How often to print scan progress (Default 60)",
+        type=int,
+        metavar="S",
+        default=60,
+    )
+    parser.add_argument(
+        "--dryrun", help="Print list to scan and quit", action="store_true"
+    )
+    parser.add_argument(
+        "--dontwalk", help="Don't split <Path> into each directory", action="store_true"
+    )
+    parser.add_argument(
+        "--scanident",
+        help="Unique identifier for scan to append to logs/files Default D-m-Y)",
+        type=str,
+        default=datetime.now().strftime("%d-%m-%Y"),
+    )
 
-pp = pprint.PrettyPrinter(indent=4)
+    args = parser.parse_args()
+    return args
 
 
 # takes a comma seperated list of paths relative to PATH
@@ -181,23 +185,26 @@ def scan_path(
 
 
 #########  MAIN PROGRM ########
-scan_set = build_scanlist(args.path, dontwalk=args.dontwalk)
+if __name__ == "__main__":
+    pp = pprint.PrettyPrinter(indent=4)
+    args = parse_args(sys.argv[1:])
+    scan_set = build_scanlist(args.path, dontwalk=args.dontwalk)
 
-print("Will Scan Following List")
-pp.pprint(scan_set)
+    print("Will Scan Following List")
+    pp.pprint(scan_set)
 
-# create partial function so it can be passed to pool.map()
-func = partial(
-    scan_path,
-    scanident=args.scanident,
-    np=args.np,
-    atime=args.days,
-    progress=args.progress,
-    dryrun=args.dryrun,
-)
+    # create partial function so it can be passed to pool.map()
+    func = partial(
+        scan_path,
+        scanident=args.scanident,
+        np=args.np,
+        atime=args.days,
+        progress=args.progress,
+        dryrun=args.dryrun,
+    )
 
-# walk paths in path in parallel
-with mp.Pool(args.threads) as p:
-    p.map(func, scan_set)
-    p.close()
-    p.join()
+    # walk paths in path in parallel
+    with mp.Pool(args.threads) as p:
+        p.map(func, scan_set)
+        p.close()
+        p.join()
