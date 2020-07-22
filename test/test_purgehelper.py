@@ -119,7 +119,7 @@ def test_PurgeObject_agedfile_purge(agedfile, caplog, kwargs, ruleargs, fileexis
 def test_PurgeObject_underage(underagefile):
     """Check that PurgeDaysUnderError is thrown for underage file."""
     po = PurgeObject(path=underagefile, days=5, purge=True)
-    with pytest.raises(PurgeDaysUnderError):
+    with pytest.raises(PurgeDaysUnderError, match=r"st_atime: .+ Today: .+"):
         po.applyrules()
 
 
