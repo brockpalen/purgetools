@@ -82,16 +82,24 @@ def check_path_exclude(path, excludelist=[], ignoremissing=False):
 
 # builds a set of paths to scan
 # path is string of directory to walk for top level directories
-def build_scanlist(path, dontwalk=False):
+def build_scanlist(path, excludes=[], dontwalk=False, ignoremissing=False):
+    """
+    Build a list of directories to scan after stripping out excludes list.
+
+    path pathlib to get list of directories internal to
+    excludes array of names to exclude from list
+    dontwalk just use path not build a list
+    ignoremissing Don't raise is entry in excludes=[] isn't found
+
+    returns set of directories
+    """
     path = pathlib.Path(path)
     if path.is_dir():
         print(f"Path {path.resolve()} exists")
     else:
         raise Exception(f"Path {args.path} does not exist")
 
-    ex_paths = set(
-        check_path_exclude(path, config["buildlist"]["ignorepath"].split(","))
-    )
+    ex_paths = set(check_path_exclude(path, excludes, ignoremissing=ignoremissing))
 
     # can only scan directories
     sc_paths = set()
@@ -188,7 +196,12 @@ def scan_path(
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     args = parse_args(sys.argv[1:])
-    scan_set = build_scanlist(args.path, dontwalk=args.dontwalk)
+    scan_set = build_scanlist(
+        args.path,
+        dontwalk=args.dontwalk,
+        excludes=config["buildlist"]["ignorepath"].split(","),
+        ignoremissing=config["buildlist"]["ignoremissing"],
+    )
 
     print("Will Scan Following List")
     pp.pprint(scan_set)
