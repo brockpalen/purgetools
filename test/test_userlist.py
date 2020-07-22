@@ -2,10 +2,12 @@ import argparse
 import filecmp
 import logging
 import os
+import pwd
 import shutil
 import smtplib
 import stat
 import sys
+from collections import namedtuple
 from pprint import PrettyPrinter as pp
 from unittest.mock import MagicMock
 
@@ -18,6 +20,7 @@ from userlist import (
     EmailFromTemplate,
     UserNotify,
     UserSort,
+    email_purgelist,
     get_dir_paths,
     get_user,
     parse_args,
@@ -218,3 +221,14 @@ this is my junk template world and hello
     logging.debug(f"Composed message: {message}")
     # compare message passed to smtplib with expected
     assert message == composed
+
+
+@pytest.mark.xfail(reason="not complete email_purgelist")
+def test_email_purgelist(monkeypatch):
+    # replace getpwnam common name with static
+    Passwd = namedtuple("Passwd", ["pw_gecos"])
+    p = Passwd(pw_gecos="Brock Palen")
+    getpwnam = MagicMock()
+    getpwnam.return_value = p
+    monkeypatch.setattr(pwd, "getpwnam", getpwnam)
+    email_purgelist()
