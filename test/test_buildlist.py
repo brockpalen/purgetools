@@ -28,6 +28,20 @@ from buildlist import build_scanlist, parse_args
 
 
 @pytest.mark.parametrize(
+    "ValidArgs",
+    [
+        [("/tmp", "--scanident", "1-1-999"), ("/tmp", "1-1-999", False),],
+        [("/tmp", "--scanident", "1-1-999", "--dryrun"), ("/tmp", "1-1-999", True),],
+    ],
+)
+def test_valid_args(ValidArgs):
+    args = parse_args(ValidArgs[0])
+    assert args.path == ValidArgs[1][0]
+    assert args.scanident == ValidArgs[1][1]
+    assert args.dryrun == ValidArgs[1][2]
+
+
+@pytest.mark.parametrize(
     "kwargs,count,exception",
     [
         ({}, 3, does_not_raise()),  # basic test
