@@ -8,6 +8,7 @@ import datetime
 import logging
 import pathlib
 import pprint
+import pwd
 import subprocess
 import sys
 import time
@@ -24,6 +25,12 @@ def parse_args(args):
     )
     parser.add_argument(
         "--dryrun", help="Print what would do but dont do it", action="store_true"
+    )
+    parser.add_argument(
+        "--users-ignore",
+        help="Comma list of usernames files to skip",
+        type=str,
+        default=False,
     )
     parser.add_argument(
         "--days", help="Number of days to check st_atime", type=int, required=True
@@ -74,7 +81,7 @@ class PurgeDaysUnderError(PurgeError):
 
     def __str__(self):
         try:
-            atime = datetime.date.fromtimestamp(self.PurgeObject._stat.st_atime)
+            atime = datetime.date.fromtimestamp(self.PurgeObject.stat.st_atime)
             today = datetime.date.today()
             s = f"st_atime: {atime} Today: {today} {self.PurgeObject._path} {self.message}"
         except Exception as e:
@@ -89,6 +96,7 @@ class PurgeObject:
         days=False,  # (required) number of days old from TODAY required to take action on
         purge=False,  # don't move to stagepath, just blow it away NOT IMPLIMENTED
         stagepath=False,  # Path to move file to for staging
+        userignore=False,  # array of usernames to ignore
     ):
         """setup the path and rules for purge action (purge or stage)"""
 
@@ -107,18 +115,30 @@ class PurgeObject:
         self._days = days
         self._purge = purge
         self._stagepath = stagepath
+        self.userignore = userignore
 
     def _check_valid(self, path):
         """Check if valid file and exists"""
         p = pathlib.Path(path)
         if p.is_file():
             self._path = p
-            self._stat = p.stat()
+            self.stat = p.stat()
         else:
             raise PurgeNotFileError(self, f"File {path} does not exist or file")
 
     def applyrules(self, dryrun=False):
         """apply the settings/rules to the file"""
+
+        # check if file owned by a user to ignore if so skip everything else
+        if self.userignore:  # there are users to ignore do extra lookup
+            username = pwd.getpwuid(self.stat.st_uid).pw_name
+            logging.debug(f"{self._path} owned by {username}")
+            if username in self.userignore:
+                # username found in ignorelist stop here
+                logging.info(
+                    f"Skipping {self._path} owned by {username} in ignore list"
+                )
+                return
 
         # check self._days rule
         today = datetime.date.today()
@@ -127,10 +147,8 @@ class PurgeObject:
         logging.debug(f"Today: {today} Delta: {delta}")
 
         # if today - days > st_atime continue
-        if self._stat.st_atime > time.mktime(delta.timetuple()):
-            logging.debug(
-                f"File Underage: {self._path} st_atime: {self._stat.st_atime}"
-            )
+        if self.stat.st_atime > time.mktime(delta.timetuple()):
+            logging.debug(f"File Underage: {self._path} st_atime: {self.stat.st_atime}")
             raise PurgeDaysUnderError(self, "file underage")
 
         # if file is purge remove (CAREFUL) else stage

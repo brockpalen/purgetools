@@ -2,11 +2,13 @@ import datetime
 import logging
 import os
 import pathlib
+import pwd
 import sys
 import tempfile
 import time
 from contextlib import contextmanager
 from pprint import PrettyPrinter as pp
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -166,6 +168,18 @@ def does_not_raise():
         ({"days": 60}, {}, 1, does_not_raise()),  # 75 days > 60
         ({"days": 60}, {"dryrun": True}, 0, does_not_raise()),  # 75 days > 60 dryrun
         ({"days": 60}, {}, 1, does_not_raise()),  # 75 days > 60
+        (
+            {"days": 60, "userignore": ["notarealuser"]},
+            {},
+            0,
+            does_not_raise(),
+        ),  # 75 days > 60 BUT ignore owned by "notarealuser"
+        (
+            {"days": 60, "userignore": ["seconduser"]},
+            {},
+            1,
+            does_not_raise(),
+        ),  # 75 days > 60 BUT ignore owned by "notarealuser" but not ignored
         ({"days": 80}, {}, 0, pytest.raises(PurgeDaysUnderError)),  # 75 days < 80
         (
             {"days": 80},
@@ -175,8 +189,17 @@ def does_not_raise():
         ),  # 75 days < 80
     ],
 )
-def test_purgeObject_stage(agedfile, stagepath, kwargs, ruleargs, expected, excep):
+def test_purgeObject_stage(
+    agedfile, stagepath, kwargs, ruleargs, expected, excep, monkeypatch
+):
     """ check staging of old files"""
+    # setup mocks
+    pw_name_mock = MagicMock()
+    pw_name_mock.pw_name = "notarealuser"
+    mock_pwd = MagicMock()
+    mock_pwd.return_value = pw_name_mock
+
+    #  setup actual test
     po = PurgeObject(path=agedfile, stagepath=stagepath, **kwargs)
     num_f_before = 0
     for f in pathlib.Path(agedfile).parent.iterdir():
@@ -185,7 +208,8 @@ def test_purgeObject_stage(agedfile, stagepath, kwargs, ruleargs, expected, exce
 
     print(f"Number of files before: {num_f_before}")
 
-    with excep:
+    with excep, monkeypatch.context() as m:
+        m.setattr(pwd, "getpwuid", mock_pwd)
         po.applyrules(**ruleargs)  # take action on file
 
         # count number of files after and at destimation
