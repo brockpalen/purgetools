@@ -61,6 +61,17 @@ def parse_args(args):
         default=datetime.now().strftime("%d-%m-%Y"),
     )
 
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v",
+        "--verbose",
+        help="Increase messages, including files as added",
+        action="store_true",
+    )
+    verbosity.add_argument(
+        "-q", "--quiet", help="Decrease messages", action="store_true"
+    )
+
     args = parser.parse_args(args)
     return args
 
@@ -95,7 +106,7 @@ def build_scanlist(path, excludes=[], dontwalk=False, ignoremissing=False):
     """
     path = pathlib.Path(path)
     if path.is_dir():
-        print(f"Path {path.resolve()} exists")
+        logging.info(f"Path {path.resolve()} exists")
     else:
         raise Exception(f"Path {args.path} does not exist")
 
@@ -148,9 +159,9 @@ def scan_path(
     args += ["--output", f"{scanident}-{path.name}.cache"]
     args.append(f"{path}")
 
-    print(args)
+    logging.info(args)
     if dryrun:
-        print("--dryrun given not scanning, exiting")
+        logging.info("--dryrun given not scanning, exiting")
         return
 
     logname = f"{scanident}-{path.name}.log"
@@ -165,7 +176,7 @@ def scan_path(
         # cache file exists so sort and create sorted text version
         # no extra filters required
 
-        print("Purge Candidates found sorting")
+        logging.info("Purge Candidates found sorting")
 
         args = [config["DEFAULT"]["mpirunpath"]]
         args.append("--allow-run-as-root")
@@ -189,13 +200,21 @@ def scan_path(
             subprocess.run(args, check=True, stderr=subprocess.PIPE, stdout=log)
 
     else:
-        print(f"No Purge candidates for {path.name}")
+        logging.info(f"No Purge candidates for {path.name}")
 
 
 #########  MAIN PROGRM ########
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
     args = parse_args(sys.argv[1:])
+
+    if args.quiet:
+        logging.basicConfig(level=logging.WARNING)
+    elif args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     scan_set = build_scanlist(
         args.path,
         dontwalk=args.dontwalk,
