@@ -195,7 +195,10 @@ if __name__ == "__main__":
 
     try:
         po = PurgeObject(
-            path=args.file, days=args.days, stagepath=config["purgehelper"]["stagepath"]
+            path=args.file,
+            days=args.days,
+            stagepath=config["purgehelper"]["stagepath"],
+            userignore=args.users_ignore.split(","),
         )
         po.applyrules(dryrun=args.dryrun)
 
