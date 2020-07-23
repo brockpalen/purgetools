@@ -1,15 +1,18 @@
 import argparse
+import logging
 import os
 import pathlib
+import subprocess
 import sys
 from contextlib import ExitStack as does_not_raise
+from unittest.mock import MagicMock
 
 import pytest
 
 # needed to import functions in odd paths
 sys.path.append(os.path.abspath("./"))
 
-from buildlist import build_scanlist, parse_args
+from buildlist import build_scanlist, parse_args, scan_path
 
 #  not checking scanident isn't required but default value
 # @pytest.mark.parametrize(
@@ -70,3 +73,37 @@ def test_build_scanlist(tmp_path, kwargs, count, exception):
     with exception:
         roots = build_scanlist(tmp_path, **kwargs)
         assert len(roots) == count
+
+
+@pytest.mark.parametrize(
+    "kwargs,calls",
+    [({}, (2, 3)), ({"dryrun": True}, (0, 1)),],  # basic test  # dryrun never call
+)
+def test_scan_path(monkeypatch, tmp_path, kwargs, calls):
+    # setup
+    mock_subprocess = MagicMock()
+
+    mock_Path = MagicMock()
+
+    mock_parent = MagicMock()
+    mock_parent.parent.joinpath.return_value = "i"
+
+    mock_resolve = MagicMock()
+    mock_resolve.resolve.return_value = mock_parent
+
+    mock_is_file = MagicMock()
+    mock_is_file.is_file.return_value = True
+
+    mock_Path.side_effect = [mock_resolve, mock_is_file, mock_resolve]
+
+    # run
+    with monkeypatch.context() as m:
+        m.setattr(pathlib, "Path", mock_Path)
+        m.setattr(subprocess, "run", mock_subprocess)
+        scan_path(path=tmp_path, **kwargs)
+
+    # compare expected outcome
+    logging.info(mock_subprocess.called_with)
+    logging.info(mock_Path.called_with)
+    assert mock_subprocess.call_count == calls[0]
+    assert mock_Path.call_count == calls[1]
