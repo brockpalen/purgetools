@@ -111,15 +111,19 @@ def build_scanlist(path, excludes=[], dontwalk=False, ignoremissing=False):
         raise Exception(f"Path {args.path} does not exist")
 
     ex_paths = set(check_path_exclude(path, excludes, ignoremissing=ignoremissing))
+    logging.debug(f"Excluding paths: {ex_paths}")
 
     # can only scan directories
     sc_paths = set()
 
     if dontwalk:
+        logging.debug("dontwalk given skipping iterdir")
         sc_paths.add(path)
     else:
+        logging.debug(f"Listing directories in {path}")
         for x in path.iterdir():
             if x.is_dir():
+                logging.debug(f"Adding scan directory {x}")
                 sc_paths.add(x)
 
     return sc_paths - ex_paths
@@ -176,7 +180,7 @@ def scan_path(
         # cache file exists so sort and create sorted text version
         # no extra filters required
 
-        logging.info("Purge Candidates found sorting")
+        logging.info(f"Purge Candidates found sorting {path.name}")
 
         args = [config["DEFAULT"]["mpirunpath"]]
         args.append("--allow-run-as-root")
