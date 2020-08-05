@@ -60,4 +60,5 @@ pytest test
   
  ## Limitations
  
- * It is not possible to exclude from purge by user, only by scratch path
+ * Files with new lines in the file name currently creates issues. `userlist.py`  will exit showing details
+  * To fix you can use a command like: `rename $'\n' '' *.pbs`   to replace the newline with nothing
