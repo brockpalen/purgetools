@@ -106,13 +106,21 @@ class UserSort:
             if len(self._handles) >= self._cachelimit:
                 # already have maxed cached handles remove the first one created
                 # this is overly simple and does not actaully do remove last recently accessed
-                self._handles.popitem(last=False)
+                handle = self._handles.popitem(last=False)
+                handle.close()
 
             # go ahead and create handle
             user_log = pathlib.Path.cwd() / f"{self._scanident}-{lineuser}.purge.txt"
             g = user_log.open("a")
             self._handles[lineuser] = g
             return self._handles[lineuser]
+
+    # force closing all filehandles / sync to disk
+    def flush(self):
+        for handle in self._handles:
+            # close each open file
+            logging.debug(f"closing {self._handles[handle]}")
+            self._handles[handle].close()
 
     # take user and line check if already have cache in
     # _handles if so write otherwise create a new one
@@ -323,6 +331,7 @@ if __name__ == "__main__":
     # sort + merge per path scans into per user lists
     sorter = UserSort(cachelimit=args.cachelimit, scanident=args.scanident)
     sorter.sort(paths)
+    sorter.flush()
 
     # notify the user of the location of their data
     notifier = UserNotify(
