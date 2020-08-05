@@ -73,9 +73,14 @@ def get_dir_paths(path=pathlib.Path.cwd(), scanident=None):
 def get_user(line):
     if line is None:
         raise TypeError
+    try:
+        line = line.split()
+        user = line[1]
+    except IndexError as error:
+        logging.error(f"{error}, Line: {line}")
+        user = None
 
-    line = line.split()
-    return line[1]
+    return user
 
 
 #
@@ -118,10 +123,20 @@ class UserSort:
     def sort(self, paths):
         for path in paths:
             with path.open() as f:
+                logging.debug(str(f))
                 lines = f.readlines()
                 for line in lines:
                     lineuser = get_user(line)
-                    self.writeline(lineuser, line)
+                    if lineuser:
+                        self.writeline(lineuser, line)
+                    else:
+                        # bail out of user is None
+                        logging.error(f"lineuser is {lineuser}")
+                        logging.error(f"Line: {line} Oldline: {oldline}")
+                        sys.exit(-2)
+
+                    # save prioir line for debugging
+                    oldline = line
 
 
 # class that notifies user by
