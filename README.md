@@ -19,11 +19,12 @@ Finally it will optionally move the data to a staging area to then be deleted la
 Most tools take a `--dryrun` option showing what it will do without actually doing it
 
 * Scan each directory under a parent directory using default settings
-  * `buildlist.py /scratch/`
+  * `buildlist.py --scanident 2020-08 /scratch/`
   * Creates `<scanident>-<directory>.cache` and `<scanident>-<directory>.txt` files
 * Build per user lists for notification (optional notification TBD)
-  * `userlist.py --scanident <scanident>`
-* Stage or purge data
+  * `userlist.py --dryrun --scanident <scanident>`
+  * `userlist.py --email --scanident <scanident>`
+* Stage or purge data, request snapshot if needed
   * Move/Remove any `<scanident>-<directory>.cache`  files that should be excluded
   * `purgelist.py --days <days>  --scanident <scanident>`
   * Takes all files in the `<scanident>-<directory>.cache` files and checks if they are at least `--days <days>` last accessed.  If they are move to staging area
