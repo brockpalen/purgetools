@@ -39,10 +39,7 @@ def parse_args(args):
         "--file", help="File to check and take action on", type=str, required=True
     )
     parser.add_argument(
-        "--scanident",
-        help="Unique identifier for scan from buildlist.py ",
-        type=str,
-        required=True,
+        "--purge", help="Don't stage, delete in place", action="store_true"
     )
 
     verbosity = parser.add_mutually_exclusive_group()
@@ -153,13 +150,13 @@ class PurgeObject:
 
         # if file is purge remove (CAREFUL) else stage
         if self._purge:
-            logging.info(f"Deleting {self._path} NOT IMPLIMENTED")
+            logging.info(f"Deleting {self._path}")
+
             if dryrun:
-                logging.info("Dryrun requested skipping purge")
+                logging.info("Dryrun requested skipping purge {self._path}")
             else:
                 # actaully do it
-                # no op not implimented
-                pass
+                self._path.unlink()
 
         # stage, don't remove
         else:
@@ -193,13 +190,22 @@ if __name__ == "__main__":
 
     logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=level)
 
+    po_args = {
+        "path": args.file,
+        "days": args.days,
+        "userignore": args.users_ignore.split(","),
+    }
+
+    # set if were purging or staging
+    if args.purge:
+        po_args["purge"] = True
+    else:
+        # staging
+        po_args["stagepath"] = config["purgehelper"]["stagepath"]
+
     try:
-        po = PurgeObject(
-            path=args.file,
-            days=args.days,
-            stagepath=config["purgehelper"]["stagepath"],
-            userignore=args.users_ignore.split(","),
-        )
+        # Run the actual purge / stage
+        po = PurgeObject(**po_args)
         po.applyrules(dryrun=args.dryrun)
 
     except PurgeNotFileError as e:

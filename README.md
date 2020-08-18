@@ -26,8 +26,14 @@ Most tools take a `--dryrun` option showing what it will do without actually doi
   * `userlist.py --email --scanident <scanident>`
 * Stage or purge data, request snapshot if needed
   * Move/Remove any `<scanident>-<directory>.cache`  files that should be excluded
-  * `purgelist.py --days <days>  --scanident <scanident>`
+  * `purgelist.py --days <days>  --scanident <scanident>` # NOT IMPLIMTNED
   * Takes all files in the `<scanident>-<directory>.cache` files and checks if they are at least `--days <days>` last accessed.  If they are move to staging area
+* Current Purge Process
+  * For each `<scanident>-*.cache` file run:
+
+```
+mpirun --oversubscribe --allow-run-as-root dfind --exec purgehelper.py --dryrun --verbose --days 60 --users-ignore brockp,qicangsh,yeinlim --file {} ; --input 2020-dryrun-sglotzer_root.cache > 2020-dryrun-sglotzer_root.cache.log 2>&1
+```
   
 
 ## Building

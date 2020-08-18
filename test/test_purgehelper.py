@@ -25,13 +25,7 @@ from purgehelper import (
 
 
 @pytest.mark.parametrize(
-    "InvalidArgs",
-    [
-        ("--days", "5"),
-        ("--file", "/tmp/data"),
-        ("--scanident", "1-1-999"),
-        ("--scanident", "1-1-999", "--file", "/tmp/data"),
-    ],
+    "InvalidArgs", [("--days", "5"), ("--file", "/tmp/data"),],
 )
 def test_missing_args(InvalidArgs):
     with pytest.raises(SystemExit) as e:
@@ -42,18 +36,12 @@ def test_missing_args(InvalidArgs):
 
 @pytest.mark.parametrize(
     "ValidArgs",
-    [
-        [
-            ("--file", "/tmp/data", "--days", "5", "--scanident", "1-1-999"),
-            ("/tmp/data", "5", "1-1-999"),
-        ]
-    ],
+    [[("--file", "/tmp/data", "--days", "5"), ("/tmp/data", "5", "1-1-999"),]],
 )
 def test_valid_args(ValidArgs):
     args = parse_args(ValidArgs[0])
     assert args.file == ValidArgs[1][0]
     assert args.days == int(ValidArgs[1][1])
-    assert args.scanident == ValidArgs[1][2]
 
 
 @pytest.fixture
@@ -229,3 +217,60 @@ def test_purgeObject_stage(
 
         print(f"Number of files staged: {num_f_dest}")
         assert num_f_dest == expected
+
+
+@pytest.mark.parametrize(
+    "kwargs, ruleargs, expected, excep",
+    [
+        ({"days": 60, "purge": True}, {}, 0, does_not_raise()),  # 75 days > 60
+        (
+            {"days": 60, "purge": True},
+            {"dryrun": True},
+            1,
+            does_not_raise(),
+        ),  # 75 days > 60 Dryrun leave file
+    ],
+)
+def test_purgeObject_delete(
+    agedfile, stagepath, kwargs, ruleargs, expected, excep, monkeypatch
+):
+    """
+    check deletion of old files
+
+    Most tests for this class are in test_purgeObject_stage
+
+    agedfile  File atime > 60 days
+    stagepath Path to stage files to if staging
+    kwargs    Dict options to PurgeObject()
+    ruleargs  Dict to pass to PurgeObject.applyrules()
+    expected  Number of expected files left after run
+    excep     Exepcted Exception
+    monkeypatch
+    """
+    # setup mocks
+    pw_name_mock = MagicMock()
+    pw_name_mock.pw_name = "notarealuser"
+    mock_pwd = MagicMock()
+    mock_pwd.return_value = pw_name_mock
+
+    #  setup actual test
+    po = PurgeObject(path=agedfile, **kwargs)
+    num_f_before = 0
+    for f in pathlib.Path(agedfile).parent.iterdir():
+        if f.is_file():
+            num_f_before += 1
+
+    print(f"Number of files before: {num_f_before}")
+
+    with excep, monkeypatch.context() as m:
+        m.setattr(pwd, "getpwuid", mock_pwd)
+        po.applyrules(**ruleargs)  # take action on file
+
+        # count number of files after and at destimation
+        num_f_after = 0
+        for f in pathlib.Path(agedfile).parent.iterdir():
+            if f.is_file():
+                num_f_after += 1
+
+        print(f"Number of files after: {num_f_after}")
+        assert num_f_after == expected
