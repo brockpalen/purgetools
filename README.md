@@ -33,6 +33,9 @@ Most tools take a `--dryrun` option showing what it will do without actually doi
 
 ```
 mpirun --oversubscribe --allow-run-as-root dfind --exec purgehelper.py --dryrun --verbose --days 60 --users-ignore brockp,qicangsh,yeinlim --file {} ; --input 2020-dryrun-sglotzer_root.cache > 2020-dryrun-sglotzer_root.cache.log 2>&1
+
+# actual purge
+mpirun --oversubscribe --allow-run-as-root dfind --exec purgehelper.py --purge --verbose --days 60 --users-ignore brockp,qicangsh,yeinlim --file {} ; --input 2020-dryrun-sglotzer_root.cache > 2020-dryrun-sglotzer_root.cache.log 2>&1
 ```
   
 
@@ -56,14 +59,7 @@ pytest test
 
 ## TODO
 
- * User notification
-  * Move sorted data to user visiable location and change ownership to the user and access to the file (metadata may be sensitive)
-  * Email user form letter with location of their purge list
- * Stage to be deleted files 
-  * Recreate path ignoreing any permissions
-  * mv file (faster) preserving permissions
- * Purge list of files
-  * Don't stage, just check age from list and blow away
+ * Make wrapper for actual purge/relocate
   
  ## Limitations
  
