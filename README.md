@@ -46,6 +46,8 @@ purgetools doesn't require any building and works on a stock centos7 python 3.6 
 `build.sh` includes an example of building all the required versions and places them in the location.  You may need to update the modules required
 You may wish to wrap this in spack (please do)
 
+`purgehelper.py`  is much faster is compiled with `pyinstaller` in testing about 5x faster.  `pyinstaller purgehelper.py --onefile`
+
 ## Testing & Coverage
 
 ```
