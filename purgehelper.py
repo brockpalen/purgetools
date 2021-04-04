@@ -123,7 +123,7 @@ class PurgeObject:
         else:
             raise PurgeNotFileError(self, f"File {path} does not exist or file")
 
-    def applyrules(self, dryrun=False):
+    def applyrules(self, dryrun=False, ignore_ctime=False):
         """apply the settings/rules to the file"""
 
         # check if file owned by a user to ignore if so skip everything else
@@ -143,10 +143,22 @@ class PurgeObject:
         delta = today - delta
         logging.debug(f"Today: {today} Delta: {delta}")
 
+        cur_time = time.mktime(delta.timetuple())
+
         # if today - days > st_atime continue
-        if self.stat.st_atime > time.mktime(delta.timetuple()):
+        if self.stat.st_atime > cur_time:
             logging.debug(f"File Underage: {self._path} st_atime: {self.stat.st_atime}")
-            raise PurgeDaysUnderError(self, "file underage")
+            raise PurgeDaysUnderError(self, "file underage atime")
+
+        # if today - days > st_ctime continue
+        if self.stat.st_ctime > cur_time and not ignore_ctime:
+            logging.debug(f"File Underage: {self._path} st_ctime: {self.stat.st_ctime}")
+            raise PurgeDaysUnderError(self, "file underage ctime")
+
+        # if today - days > st_mtime continue
+        if self.stat.st_mtime > cur_time:
+            logging.debug(f"File Underage: {self._path} st_mtime: {self.stat.st_mtime}")
+            raise PurgeDaysUnderError(self, "file underage mtime")
 
         # if file is purge remove (CAREFUL) else stage
         if self._purge:

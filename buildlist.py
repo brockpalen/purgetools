@@ -159,6 +159,8 @@ def scan_path(
     args += ["--progress", f"{progress}"]
     args += ["--type", "f"]
     args += ["--atime", f"+{atime}"]
+    args += ["--mtime", f"+{atime}"]
+    args += ["--ctime", f"+{atime}"]
     args += ["--distribution", f"{distribution}"]
     args += ["--output", f"{scanident}-{path.name}.cache"]
     args.append(f"{path}")
@@ -195,6 +197,8 @@ def scan_path(
         args += ["--progress", f"{progress}"]
         args += ["--type", "f"]
         args += ["--atime", f"+{atime}"]
+        args += ["--mtime", f"+{atime}"]
+        args += ["--ctime", f"+{atime}"]
         args += ["--distribution", f"{distribution}"]
         args += ["--sort", "user,name"]
         args += ["--input", f"{scanident}-{path.name}.cache"]

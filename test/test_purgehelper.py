@@ -91,11 +91,11 @@ def underagefile(tmp_path):
     [
         pytest.param(
             {"purge": True},
-            {},
+            {"ignore_ctime": True},
             False,
             marks=pytest.mark.xfail(reason="Purge not implimented"),
         ),
-        ({"purge": True}, {"dryrun": True}, True),
+        ({"purge": True}, {"dryrun": True, "ignore_ctime": True}, True),
     ],
 )
 def test_PurgeObject_agedfile_purge(agedfile, caplog, kwargs, ruleargs, fileexists):
@@ -153,22 +153,32 @@ def does_not_raise():
 @pytest.mark.parametrize(
     "kwargs, ruleargs, expected, excep",
     [
-        ({"days": 60}, {}, 1, does_not_raise()),  # 75 days > 60
-        ({"days": 60}, {"dryrun": True}, 0, does_not_raise()),  # 75 days > 60 dryrun
-        ({"days": 60}, {}, 1, does_not_raise()),  # 75 days > 60
+        ({"days": 60}, {"ignore_ctime": True}, 1, does_not_raise()),  # 75 days > 60
+        (
+            {"days": 60},
+            {"dryrun": True, "ignore_ctime": True},
+            0,
+            does_not_raise(),
+        ),  # 75 days > 60 dryrun
+        ({"days": 60}, {"ignore_ctime": True}, 1, does_not_raise()),  # 75 days > 60
         (
             {"days": 60, "userignore": ["notarealuser"]},
-            {},
+            {"ignore_ctime": True},
             0,
             does_not_raise(),
         ),  # 75 days > 60 BUT ignore owned by "notarealuser"
         (
             {"days": 60, "userignore": ["seconduser"]},
-            {},
+            {"ignore_ctime": True},
             1,
             does_not_raise(),
         ),  # 75 days > 60 BUT ignore owned by "notarealuser" but not ignored
-        ({"days": 80}, {}, 0, pytest.raises(PurgeDaysUnderError)),  # 75 days < 80
+        (
+            {"days": 80},
+            {"ignore_ctime": True},
+            0,
+            pytest.raises(PurgeDaysUnderError),
+        ),  # 75 days < 80
         (
             {"days": 80},
             {"dryrun": True},
@@ -222,10 +232,15 @@ def test_purgeObject_stage(
 @pytest.mark.parametrize(
     "kwargs, ruleargs, expected, excep",
     [
-        ({"days": 60, "purge": True}, {}, 0, does_not_raise()),  # 75 days > 60
         (
             {"days": 60, "purge": True},
-            {"dryrun": True},
+            {"ignore_ctime": True},
+            0,
+            does_not_raise(),
+        ),  # 75 days > 60
+        (
+            {"days": 60, "purge": True},
+            {"dryrun": True, "ignore_ctime": True},
             1,
             does_not_raise(),
         ),  # 75 days > 60 Dryrun leave file

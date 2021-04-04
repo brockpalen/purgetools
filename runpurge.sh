@@ -5,12 +5,12 @@
 
 # Setup
 
-USERIGNORE=brockp,root
+USERIGNORE=brockp,root,bankhead
 
-DFIND=/scratch/support_root/support/brockp/purge/install/bin/dfind
+DFIND=/scratch/support_root/support/brockp/purgetools/install/bin/dfind
 MPIRUN=/sw/arcts/centos7/gcc_4_8_5/openmpi/3.1.4/bin/mpirun
 NP=32
-PURGEHELPER=/scratch/support_root/support/brockp/purge/dist/purgehelper
+PURGEHELPER=/scratch/support_root/support/brockp/purgetools/dist/purgehelper
 
 
 # exit if no arguments given
