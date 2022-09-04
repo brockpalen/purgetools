@@ -149,7 +149,7 @@ def scan_path(
     args = [config["DEFAULT"]["mpirunpath"]]
     args.append("--allow-run-as-root")
     args.append("--oversubscribe")
-    args += ["--mca", "io", f"{config['DEFAULT']['romio']}"]
+    # args += ["--mca", "io", f"{config['DEFAULT']['romio']}"] # required for older OMPI
     args += ["-np", f"{np}"]
 
     # add settings for dwalk, mpiFileUtils installed in <instdir>/install/bin/dwalk
@@ -187,7 +187,7 @@ def scan_path(
         args = [config["DEFAULT"]["mpirunpath"]]
         args.append("--allow-run-as-root")
         args.append("--oversubscribe")
-        args += ["--mca", "io", f"{config['DEFAULT']['romio']}"]
+        # args += ["--mca", "io", f"{config['DEFAULT']['romio']}"] # required for older OMPI
         args += ["-np", f"{np}"]
 
         # add settings for dwalk, mpiFileUtils installed in <instdir>/install/bin/dwalk
