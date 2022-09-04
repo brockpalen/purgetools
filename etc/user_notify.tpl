@@ -15,6 +15,15 @@ Policies:
 You can read scratch policies on our website:
 ${policylink}
 
+No cost storage options
+=======================
+
+Each PI is able to apply for the UM-Research Computing Package
+https://arc.umich.edu/umrcp/
+
+Several academic units provide their own no cost storage or discounts. 
+For assistance with data management reach out at arc-support@umich.edu.
+
 Thank You
-ARC-TS Support
-arcts-support@umich.edu
+ARC Support
+arc-support@umich.edu
