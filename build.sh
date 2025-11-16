@@ -4,7 +4,7 @@
 
 source /etc/profile.d/z11StdEnv.sh
 
-module load gcc/4.8.5 openmpi/3.1.4 cmake/3.14.3
+module load gcc/10.0.3 openmpi/4.1.6 cmake/3.26.3
 
 mkdir install
 installdir=`pwd`/install
