@@ -200,7 +200,8 @@ def scan_path(
         args += ["--mtime", f"+{atime}"]
         args += ["--ctime", f"+{atime}"]
         args += ["--distribution", f"{distribution}"]
-        args += ["--sort", "user,name"]
+        args += ["--sort", "user"]
+        # args += ["--sort", "user,name"]   # removes most memory requirements
         args += ["--input", f"{scanident}-{path.name}.cache"]
         args += ["--text-output", f"{scanident}-{path.name}.txt"]
 
